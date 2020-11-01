@@ -27,19 +27,20 @@ This is a sample of a `SCREENSHOT_NEWS.js` plugin:
 
 /*    understand/
  * plugin.info is expected to contain information about
- * this plugin - it's name and a longer chatty description
- * shown to the user of what we are going to do
+ * this plugin - the name and a chatty message
+ * to the user when it starts and ends work
  */
 plugin.info = {
   name: "Screenshot News",
-  chat: tellUserWhatWeDo, /* can be function or string */
+  sayOnStart: tellUserWeAreStarting,
+  sayOnEnd: "Ok done", /* can be function or string */
 }
 
 /*    way/
  * to keep the chats with the user interesting, we vary
  * the stuff we tell him
  */
-function tellUserWhatWeDo(task) {
+function tellUserWeAreStarting(task) {
   let chats = [
     "I'm going to checkout the latest news",
     "Taking a screenshot of the latest news for you",
