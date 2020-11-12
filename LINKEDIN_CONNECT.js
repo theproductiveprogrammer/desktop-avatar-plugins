@@ -13,6 +13,7 @@ function startChats(task) {
     `Sending the connection request to profile for ${user}`,
   ]
 }
+const MAX_PENDING_CONNECTIONS=1000
 
 function doneChats(task) {
   const user = getUser(task)
@@ -35,7 +36,6 @@ function pickOne(a) {
 async function performTask(task) {
 
   await page.goto(task.linkedInURL)
-
   try {
     await page.waitForSelector('.distance-badge.separator')
 
@@ -57,6 +57,7 @@ async function performTask(task) {
     await page.waitForSelector('.mn-invitation-list')
 
     await autoScroll(page)
+    const url = task.linkedInURL
     const already = await page.evaluate(async ({ url, MAX_PENDING_CONNECTIONS }) => {
       /**
        *  outcome/
@@ -111,7 +112,7 @@ async function performTask(task) {
         }
       }
 
-    }, { task.linkedInURL, MAX_PENDING_CONNECTIONS })
+    }, { url, MAX_PENDING_CONNECTIONS })
     if(already === "inprogress") {
       status.done()
       return
