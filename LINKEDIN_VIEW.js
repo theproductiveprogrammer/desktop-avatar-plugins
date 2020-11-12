@@ -42,12 +42,6 @@ function pickOne(a) {
   return a[Math.floor(Math.random()*a.length)]
 }
 
-function chatWithUser(task) {
-  let chats = [
-  ]
-  return chats[Math.floor(Math.random()*chats.length)]
-}
-
 async function performTask(task) {
   await page.goto(task.linkedInURL)
   await page.waitFor('input[role=combobox]')
