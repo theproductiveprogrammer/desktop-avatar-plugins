@@ -18,7 +18,7 @@ To solve this issue the Desktop Avatar holds a lot of it’s web page logic in p
 
 A plugin must be named after the task action it handles. For example the task `LINKEDIN_VIEW` would be handled by `LINKEDIN_VIEW.js`.
 
-Each plugin is javascript with access to the **user’s browser**, the **task information**, and the **console/trace** for logging. The plugin **MUST** respond with the status of the task - _done_, or failed for a particular reason (_timeout_, _usererr_, _servererr_, _capcha_,…).
+Each plugin is javascript with access to the **user’s browser**, the **task information**, and the **console/log.trace()/log.err()** for logging. The plugin **MUST** respond with the status of the task - _done_, or failed for a particular reason (_timeout_, _usererr_, _servererr_, or _capcha_).
 
 This is a sample of a `SCREENSHOT_NEWS.js` plugin:
 
@@ -50,50 +50,22 @@ function tellUserWeAreStarting(task) {
   return chats[Math.floor(Math.random()*chats.length)]
 }
 
-
-/*    understand/
- * if we are given a plugin task then we perform it
- * typically using the browser. Again this is a standard
- * check and the meat of the task is done in the
- * "performTask" function
- * Here we also do a last check - if there is some bug/crash
- * we report it as a server error.
- */
-if(plugin.task) {
-  performTask(plugin.task)
-    .then(() => 1)
-    .catch(status.servererr)
-}
-
 /*    understand/
  * This is the core function we use to perform our task.
- * We use the browser given to use to do the work and
+ * We use the page available to do the work and
  * mark the status.
- * It's also recommended to close the page before exiting
- * because the browser is going to be re-used and it
- * should not have too many open pages - clean up as you go.
  */
 async function performTask(task) {
-  try {
+  await page.setDefaultNavigationTimeout(plugin.timeout)
 
-    let page = await browser.newPage()
-
-    await page.setDefaultNavigationTimeout(plugin.timeout)
-
-    trace("going to reuters.com")
-    await page.goto("https://www.reuters.com/", {
+  log.trace("going to reuters.com")
+  await page.goto("https://www.reuters.com/", {
       waitUntil: 'networkidle2'
     })
-    trace("taking screenshot")
-    await page.screenshot({path: 'news.png'})
-    trace("closing page")
+  log.trace("taking screenshot")
+  await page.screenshot({path: 'news.png'})
 
-    await page.close()
-    status.done()
-
-  } catch(e) {
-    status.servererr(e)
-  }
+  status.done()
 }
 ```
 
@@ -102,8 +74,10 @@ async function performTask(task) {
 The plugin has access to:
 
 * **browser** : the [Puppeteer](https://pptr.dev/) browser instance for the associated user - already logged in and configured (`headless` or not etc)
+* **page**: the LinkedIn logged in page
 * **console** : the usual javascript console
-* **trace()** : a function that generates trace logs for easier debugging. `trace()` only generates logs when the `DEBUG` environment variable is set otherwise it defaults to a no-op.
+* **log.trace()** : a function that generates trace logs for easier debugging.
+* **log.err()** : record errors in the log file.
 * **status** : one of the following is expected to be triggered before the plugin exits:
   * _done_ : successfully completed
   * _usererr_ : the task given has some problem
