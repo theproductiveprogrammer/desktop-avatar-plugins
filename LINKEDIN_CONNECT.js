@@ -50,7 +50,7 @@ function chatWithUser(task) {
 
 async function performTask(task) {
 
-  await page.goto(task.url)
+  await page.goto(task.linkedInURL)
       try {
   
         try {
@@ -74,8 +74,8 @@ async function performTask(task) {
           await page.waitForSelector('.mn-invitation-list')
   
           await autoScroll(page)
-         
-          let status = await page.evaluate(async ({ url, MAX_PENDING_CONNECTIONS }) => {
+          let url = task.linkedInURL
+          let status_1 = await page.evaluate(async ({ url, MAX_PENDING_CONNECTIONS }) => {
             /**
             *  outcome/
             * This function removes the domain name from absolute_url and compare with relate_url.
@@ -130,8 +130,7 @@ async function performTask(task) {
             }
   
           }, { url, MAX_PENDING_CONNECTIONS })
-          if(status) {
-            ctx.status = status
+          if(status_1) {
             return
           }
         } catch(e) {
@@ -139,7 +138,7 @@ async function performTask(task) {
           /* if no pending invitations - we can continue */
         }
   
-        await page.goto(task.url)
+        await page.goto(task.linkedInURL)
         let currentUrl = page.url()
         if(currentUrl.includes('unavailable')) throw new ProfileUnavailableError(`${url} this profile is not available`)
         await waitForConnectionOption(page)
@@ -164,6 +163,7 @@ async function performTask(task) {
             'Send now',
             'Send invitation',
           ], page)
+          status.done()
         } else {
           await waitforemailoption(page,task.email)
           await clickButton([
@@ -171,6 +171,7 @@ async function performTask(task) {
             'Send now',
             'Send invitation',
           ], page)
+          status.done()
         }
   
   
