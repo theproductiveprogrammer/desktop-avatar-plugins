@@ -6,16 +6,6 @@ plugin.info = {
   sayOnEnd: task => pickOne(doneChats(task)),
 }
 
-if(plugin.task) {
-  performTask(plugin.task)
-    .then(() => {
-      status.done()
-    })
-    .catch(err => {
-      status.fail(err)
-    })
-}
-
 function startChats(task) {
   const user = getUser(task)
   return [
