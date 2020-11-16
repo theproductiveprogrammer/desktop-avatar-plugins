@@ -79,8 +79,8 @@ async function performTask(task) {
       return msg_list
     })
     for (let k =0;k<msgList.length;k++){
-      if(util.compareTwoStrings(msgList[k].toLowerCase(), msg.toLowerCase()) > 0.9) {
-        status.usererr(`(${msg}) This msg was already sent.`)
+      if(util.compareTwoStrings(msgList[k].toLowerCase(), task.message.toLowerCase()) > 0.9) {
+        status.usererr(`(${task.message}) This msg was already sent.`)
         return
       }
     }
@@ -112,7 +112,7 @@ async function performTask(task) {
   })
   const msgbox_sel = 'div.msg-form__contenteditable[contenteditable=true]'
   await page.waitFor(msgbox_sel)
-  await page.type(msgbox_sel, msg)
+  await page.type(msgbox_sel, task.message)
   await page.click('button.msg-form__send-button')
   await page.waitFor(2000)
   status.done()
