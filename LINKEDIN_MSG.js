@@ -41,9 +41,61 @@ async function performTask(task) {
   } catch(e) {
     try {
       await page.waitFor('[data-resource="feed/badge"]')
-    } catch(e) {}
+    } catch(e) {
+      await page.waitFor(2000)
+    }
+  }
+  const name = await page.evaluate(()=>{
+    return document.querySelector('li.inline.t-24.t-black.t-normal.break-words').innerText 
+  })
+  if(!name) {
+    status.servererr("Failed to find user name!")
+    return
+  }
+  await page.goto('https://www.linkedin.com/messaging/')
+  await page.waitFor(5000)
+  const convlist = await page.evaluate(()=>{
+    const msgcont = document.querySelectorAll('h3.msg-conversation-listitem__participant-names')
+    let leadlist = []
+    for(let i = 0;i<msgcont.length;i++){
+      let msgUsers = msgcont[i].innerText
+      leadlist.push(msgUsers)
+    }
+    return leadlist
+  })
+  const idx = convlist.indexOf(name)
+  if(idx !== -1) {
+    await page.evaluate((idx)=>{
+      let recipients = document.querySelectorAll('h3.msg-conversation-listitem__participant-names')
+      recipients[idx].click()
+    },idx)
+    await page.waitFor(5000)
+    const msgList = await page.evaluate(()=>{
+      const msgs = document.querySelectorAll(".msg-s-event-listitem__body")
+      let msg_list = []
+      for (let j =0;j<msgs.length;j++){
+        msg_list.push(msgs[j].innerText)
+      }
+      return msg_list
+    })
+    for (let k =0;k<msgList.length;k++){
+      if(util.compareTwoStrings(msgList[k].toLowerCase(), msg.toLowerCase()) > 0.9) {
+        status.usererr(`(${msg}) This msg was already sent.`)
+        return
+      }
+    }
   }
 
+  await page.goto(task.linkedInURL)
+  try {
+    await page.waitFor('input[role=combobox]')
+  } catch(e) {
+    try {
+      await page.waitFor('[data-resource="feed/badge"]')
+    } catch(e) {
+      await page.waitFor(2000)
+    }
+  }
   await page.evaluate(async () => {
     const as = document.getElementsByTagName('a')
     let found
@@ -58,11 +110,10 @@ async function performTask(task) {
     if(!found) throw('Failed to find message button')
     found.click()
   })
-
   const msgbox_sel = 'div.msg-form__contenteditable[contenteditable=true]'
   await page.waitFor(msgbox_sel)
   await page.type(msgbox_sel, msg)
-
   await page.click('button.msg-form__send-button')
+  await page.waitFor(2000)
   status.done()
 }
