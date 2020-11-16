@@ -34,7 +34,13 @@ function pickOne(a) {
 
 async function performTask(task) {
   await page.goto(task.linkedInURL)
-  await page.waitFor('input[role=combobox]')
+  try {
+    await page.waitFor('input[role=combobox]')
+  } catch(e) {
+    try {
+      await page.waitFor('[data-resource="feed/badge"]')
+    } catch(e) {}
+  }
   await autoScroll(page)
   await autoScroll(page)
   status.done()
