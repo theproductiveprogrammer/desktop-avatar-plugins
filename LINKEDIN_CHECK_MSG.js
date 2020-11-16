@@ -106,7 +106,7 @@ async function performTask(task) {
         }
       }
 
-    }, url)
+    }, task.linkedInURL)
 
     if(response) {
       status.notify("event/inmsg-response", response.msg)
