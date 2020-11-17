@@ -2,8 +2,14 @@
 
 plugin.info = {
   name: "Linkedin Connect",
+  chat,
   sayOnStart: task => pickOne(startChats(task)),
   sayOnEnd: task => pickOne(doneChats(task)),
+}
+
+function chat(task, status) {
+  if(status.code == 102) return pickOne(startChats(task))
+  if(status.code == 200) return pickOne(doneChats(task))
 }
 
 function startChats(task) {

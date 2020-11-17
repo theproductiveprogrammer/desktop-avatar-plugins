@@ -2,8 +2,21 @@
 
 plugin.info = {
   name: "Linkedin Check Message",
+  chat,
   sayOnStart: task => pickOne(startChats(task)),
   sayOnEnd: task => pickOne(doneChats(task)),
+}
+
+function chat(task, status) {
+  if(status.code == 102) return pickOne(startChats(task))
+  if(status.code == 200) {
+      return pickOne(doneChats(task))
+    if(status.notify === "event/inmsg-response") {
+      return pickOne(respondedChats(task))
+    } else {
+      return pickOne(doneChats(task))
+    }
+  }
 }
 
 function startChats(task) {
@@ -16,6 +29,16 @@ function startChats(task) {
 }
 
 function doneChats(task) {
+  const user = getUser(task)
+  return [
+    `Finished checking for replies from ${user}`,
+    `${user} has not replied yet...`,
+    `Done checking - no reply from ${user} yet`,
+    `Completed checking - ${user} has yet to reply`,
+  ]
+}
+
+function respondedChats(task) {
   const user = getUser(task)
   return [
     `Yay! ${user} has replied`,

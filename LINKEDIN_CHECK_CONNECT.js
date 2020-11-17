@@ -2,8 +2,20 @@
 
 plugin.info = {
   name: "Linkedin Check Connect",
+  chat,
   sayOnStart: task => pickOne(startChats(task)),
   sayOnEnd: task => pickOne(doneChats(task)),
+}
+
+function chat(task, status) {
+  if(status.code == 102) return pickOne(startChats(task))
+  if(status.code == 200) {
+    if(status.notify === "event/connection-accept") {
+      return pickOne(connectedChats(task))
+    } else {
+      return pickOne(doneChats(task))
+    }
+  }
 }
 
 function startChats(task) {
@@ -16,6 +28,16 @@ function startChats(task) {
 }
 
 function doneChats(task) {
+  const user = getUser(task)
+  return [
+    `Finished checking status of connection request`,
+    `Done checking - ${user} has not accepted our connection request yet`,
+    `Completed checking connection status of ${user}`,
+    `Completed checking connection status of ${user} - no reponse yet`,
+  ]
+}
+
+function connectedChats(task) {
   const user = getUser(task)
   return [
     `Bravo! ${user} accepted the connection request`,
