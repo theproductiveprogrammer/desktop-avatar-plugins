@@ -30,9 +30,9 @@ function startChats(task) {
 function doneChats(task) {
   const user = getUser(task)
   return [
-    `Finished checking status of connection request`,
+    `Checked and the connection request was not accepted by ${user}.`,
     `Done checking - ${user} has not accepted our connection request yet`,
-    `Completed checking connection status of ${user}`,
+    `Completed checking connection status of ${user}. Request not accepted yet`,
     `Completed checking connection status of ${user} - no reponse yet`,
   ]
 }
