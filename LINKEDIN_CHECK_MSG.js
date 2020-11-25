@@ -10,7 +10,6 @@ plugin.info = {
 function chat(task, status) {
   if(status.code == 102) return pickOne(startChats(task))
   if(status.code == 200) {
-      return pickOne(doneChats(task))
     if(status.notify === "event/inmsg-response") {
       return pickOne(respondedChats(task))
     } else {
