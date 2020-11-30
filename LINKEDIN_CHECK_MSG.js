@@ -58,7 +58,42 @@ function pickOne(a) {
 }
 
 async function performTask(task) {
+
+  await page.goto(task.linkedInURL)
+  try {
+    await page.waitFor('input[role=combobox]')
+
+  } catch(e) {
+    try {
+      await page.waitFor('[data-resource="feed/badge"]')
+    }catch(e) {
+      await page.waitFor(2000)
+    }
+  }
+  let name = await page.evaluate(()=>{
+    const e = document.querySelector('li.inline.t-24.t-black.t-normal.break-words')
+    return e ? e.innerText : null
+  })
+
   await page.goto('https://www.linkedin.com/messaging/')
+
+  if(name) {
+    // Narrowing down the conversations with searching for Lead Name 
+    await page.waitFor('a[data-control-name=view_message]')
+    await page.type("#search-conversations",name)
+    await page.keyboard.press(String.fromCharCode(13))
+    try{
+      // Waiting for NO CONVERSATION element 
+      await page.waitForSelector("p.mb4")
+      status.done()
+      return
+    }catch(e){
+      // Failed to narrow down the search? Never mind, let's just
+      // continue
+    }
+  }
+
+  // Proceeding with iterating through all/narrowed conversations
   await page.waitFor('a[data-control-name=view_message]')
   const msgs = await page.evaluate(async () => {
     const cont = document.getElementsByClassName('msg-conversations-container')[0]
@@ -69,7 +104,6 @@ async function performTask(task) {
     }
     return hrefs
   })
-
   for(let i = 0;i < msgs.length;i++) {
     await page.goto(msgs[i])
     await page.waitFor('a[data-control-name=view_profile]')
@@ -78,7 +112,7 @@ async function performTask(task) {
       const msgListContent = thread.getElementsByClassName('msg-s-message-list-content')[0]
       const msgList = msgListContent.getElementsByClassName('msg-s-message-list__event')
       for(let i = 0;i < msgList.length;i++) {
-        if(compareURLResourcePath(msgList[i].querySelector('a[data-control-name=view_profile]').href, url)) {
+        if(urleq(msgList[i].querySelector('a[data-control-name=view_profile]').href, url)) {
           return {
             responded: true,
             msg: msgList[i].getElementsByClassName('msg-s-event-listitem__body')[0].innerText
@@ -86,46 +120,26 @@ async function performTask(task) {
         }
       }
 
-      function compareURLResourcePath(url1, url2){
-        if (!url1 || !url2) return false
-
-        if(isAbsoulteURL(url1))
-          url1 = new URL(url1).pathname
-
-        if(isAbsoulteURL(url2))
-          url2 = new URL(url2).pathname
-
-        if(!url1.endsWith('/')) url1 += '/'
-        if(!url2.endsWith('/')) url2 += '/'
-        if(!url1.startsWith('/')) url1 = '/' + url1
-
-        if(!url2.startsWith('/')) url2 = '/' + url2
-
-        return url1 == url2;
-      }
-
-      function isAbsoulteURL(url) {
-        try{
-          new URL(url)
-          return true
-        }catch(e) {
-          return false;
-        }
-      }
-
-      /*    outcome/
-       * Compare the two URL paths by ignoring the difference
-       * between http:// and https:// and by removing any trailing
-       * slashes
+      /*    way/
+       * Compare the two URL paths by normalizing them
        */
-      function urleq(u1, u2) {
-        return norm_1(u1) == norm_1(u2)
+      function urleq(url1, url2){
+        if (!url1 || !url2) return false
+        return norm_1(url1) === norm_1(url2)
+      }
 
-        function norm_1(u) {
-          u = u.replace(/^http:/, 'https:')
-          u = u.replace(/\/$/, '')
-          return u
-        }
+      /*    way/
+       * if the url is a full url, get the path portion, otherwise
+       * assume it is a path url and standardize the starting and
+       * trailing slashes
+       */
+      function norm_1(url) {
+        try {
+          url = new URL(url).pathname
+        } catch(e) {}
+        if(!url.endsWith("/")) url += "/"
+        if(!url.startsWith("/")) url = "/" + url
+        return url
       }
 
     }, task.linkedInURL)
