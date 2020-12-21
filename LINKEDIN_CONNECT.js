@@ -200,6 +200,8 @@ async function waitforemailoption(page,email){
 // For Handling Note prompts while sending connection request
 async function waitForNoteOption(page,note){
   try{
+    // replaced the extra space with single space
+    note = note.replace(/\r\n/g, "\n");
     await page.waitForSelector('button[aria-label="Add a note"]', {visible: true})
     await page.click('button[aria-label="Add a note"]')
     await page.$('#custom-message')
