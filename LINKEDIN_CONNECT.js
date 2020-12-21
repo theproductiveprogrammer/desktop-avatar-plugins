@@ -1,4 +1,6 @@
 'use strict'
+const URL = require("url").URL;
+
 
 plugin.info = {
   name: "Linkedin Connect",
@@ -39,133 +41,148 @@ function pickOne(a) {
   return a[Math.floor(Math.random()*a.length)]
 }
 
+//Check Valid Url
+const isValidUrl = (s) => {
+  try {
+    new URL(s);
+    return true;
+  } catch (err) {
+    return false;
+  }
+};
+
 async function performTask(task) {
 
-  await page.goto(task.linkedInURL)
-  try {
-    await page.waitForSelector('.distance-badge.separator')
+  let valid_url = isValidUrl(task.linkedInURL)
+  if(valid_url){
+    await page.goto(task.linkedInURL)
+    try {
+      await page.waitForSelector('.distance-badge.separator')
 
-    const connected = await page.evaluate(async () => {
-      let d = document.getElementsByClassName("distance-badge separator")[0]
-      let txt = d.innerText
-      return txt.indexOf("1st degree connection") != -1
-    })
-    if(connected) {
+      const connected = await page.evaluate(async () => {
+        let d = document.getElementsByClassName("distance-badge separator")[0]
+        let txt = d.innerText
+        return txt.indexOf("1st degree connection") != -1
+      })
+      if(connected) {
+        status.done()
+        return
+      }
+    } catch(e) {
+      /* ignore - we are not connected */
+    }
+
+    try {
+      await page.goto("https://www.linkedin.com/mynetwork/invitation-manager/sent/")
+      await page.waitForSelector('.mn-invitation-list')
+
+      await autoScroll(page)
+      const url = task.linkedInURL
+      const already = await page.evaluate(async ({ url, MAX_PENDING_CONNECTIONS }) => {
+        /**
+         *  outcome/
+         * This function removes the domain name from absolute_url and compare with relate_url.
+         * if path's are matching return true else false
+         *
+         * @param {*} url1
+         * @param {*} url2
+         */
+        function compareURLResourcePath(url1, url2){
+          if (!url1 || !url2) return false
+
+          if(isAbsoulteURL(url1))
+            url1 = new URL(url1).pathname
+
+          if(isAbsoulteURL(url2))
+            url2 = new URL(url2).pathname
+
+          if(!url1.endsWith('/')) url1 += '/'
+          if(!url2.endsWith('/')) url2 += '/'
+          if(!url1.startsWith('/')) url1 = '/' + url1
+          if(!url2.startsWith('/')) url2 = '/' + url2
+
+          return url1 == url2;
+        }
+
+        function isAbsoulteURL(url) {
+          try{
+            new URL(url)
+            return true
+          }catch(e) {
+            return false;
+          }
+
+        }
+        const invites = document.getElementsByClassName("mn-invitation-list")[0]
+        const urls = invites.getElementsByTagName('a')
+        for(let i = 0;i < urls.length;i++) {
+          const isConnectPending = compareURLResourcePath(url, urls[i].href)
+          if(isConnectPending) {
+            return 'inprogress'
+          }
+        }
+
+        const filterbar = document.getElementsByClassName('mn-filters-toolbar')[0]
+        const nums = filterbar.innerText
+        const m = nums.match(/People \((.*?)\)/)
+        if(m) {
+          const num = parseInt(m[1])
+          if(!isNaN(num)) {
+            if(num > MAX_PENDING_CONNECTIONS) return 'toomany'
+          }
+        }
+
+      }, { url, MAX_PENDING_CONNECTIONS })
+      if(already === "inprogress") {
+        status.done()
+        return
+      }
+      if(already) {
+        status.usererr(already)
+        return
+      }
+    } catch(e) {
+      if(e.name != 'TimeoutError') throw e
+      /* if no pending invitations - we can continue */
+    }
+
+    await page.goto(task.linkedInURL)
+    let currentUrl = page.url()
+    if(currentUrl.includes('unavailable')) throw new Error(`${task.linkedInURL}: this profile is not available`)
+    await waitForConnectionOption(page)
+
+    await page.click('.pv-s-profile-actions--connect')
+    try {
+      await page.waitForSelector(
+        '[aria-label="Send now"]',
+        { visible: true })
+    } catch(e) {
+      /* try another interface */
+      await page.waitForSelector(
+        '[aria-label="Send invitation"]',
+        { visible: true })
+    }
+
+    if(task.note) {
+      await waitForNoteOption(page,task.note)
+      await waitforemailoption(page,task.email)
+      await clickButton([
+        'Done',
+        'Send now',
+        'Send invitation',
+      ], page)
       status.done()
-      return
-    }
-  } catch(e) {
-    /* ignore - we are not connected */
-  }
-
-  try {
-    await page.goto("https://www.linkedin.com/mynetwork/invitation-manager/sent/")
-    await page.waitForSelector('.mn-invitation-list')
-
-    await autoScroll(page)
-    const url = task.linkedInURL
-    const already = await page.evaluate(async ({ url, MAX_PENDING_CONNECTIONS }) => {
-      /**
-       *  outcome/
-       * This function removes the domain name from absolute_url and compare with relate_url.
-       * if path's are matching return true else false
-       *
-       * @param {*} url1
-       * @param {*} url2
-       */
-      function compareURLResourcePath(url1, url2){
-        if (!url1 || !url2) return false
-
-        if(isAbsoulteURL(url1))
-          url1 = new URL(url1).pathname
-
-        if(isAbsoulteURL(url2))
-          url2 = new URL(url2).pathname
-
-        if(!url1.endsWith('/')) url1 += '/'
-        if(!url2.endsWith('/')) url2 += '/'
-        if(!url1.startsWith('/')) url1 = '/' + url1
-        if(!url2.startsWith('/')) url2 = '/' + url2
-
-        return url1 == url2;
-      }
-
-      function isAbsoulteURL(url) {
-        try{
-          new URL(url)
-          return true
-        }catch(e) {
-          return false;
-        }
-
-      }
-      const invites = document.getElementsByClassName("mn-invitation-list")[0]
-      const urls = invites.getElementsByTagName('a')
-      for(let i = 0;i < urls.length;i++) {
-        const isConnectPending = compareURLResourcePath(url, urls[i].href)
-        if(isConnectPending) {
-          return 'inprogress'
-        }
-      }
-
-      const filterbar = document.getElementsByClassName('mn-filters-toolbar')[0]
-      const nums = filterbar.innerText
-      const m = nums.match(/People \((.*?)\)/)
-      if(m) {
-        const num = parseInt(m[1])
-        if(!isNaN(num)) {
-          if(num > MAX_PENDING_CONNECTIONS) return 'toomany'
-        }
-      }
-
-    }, { url, MAX_PENDING_CONNECTIONS })
-    if(already === "inprogress") {
+    } else {
+      await waitforemailoption(page,task.email)
+      await clickButton([
+        'Done',
+        'Send now',
+        'Send invitation',
+      ], page)
       status.done()
-      return
     }
-    if(already) {
-      status.usererr(already)
-      return
-    }
-  } catch(e) {
-    if(e.name != 'TimeoutError') throw e
-    /* if no pending invitations - we can continue */
-  }
-
-  await page.goto(task.linkedInURL)
-  let currentUrl = page.url()
-  if(currentUrl.includes('unavailable')) throw new Error(`${url}: this profile is not available`)
-  await waitForConnectionOption(page)
-
-  await page.click('.pv-s-profile-actions--connect')
-  try {
-    await page.waitForSelector(
-      '[aria-label="Send now"]',
-      { visible: true })
-  } catch(e) {
-    /* try another interface */
-    await page.waitForSelector(
-      '[aria-label="Send invitation"]',
-      { visible: true })
-  }
-
-  if(task.note) {
-    await waitForNoteOption(page,task.note)
-    await waitforemailoption(page,task.email)
-    await clickButton([
-      'Done',
-      'Send now',
-      'Send invitation',
-    ], page)
-    status.done()
-  } else {
-    await waitforemailoption(page,task.email)
-    await clickButton([
-      'Done',
-      'Send now',
-      'Send invitation',
-    ], page)
-    status.done()
+  }else{
+    throw new Error(`${task.linkedInURL}: Invalid Url`)
   }
 }
 
