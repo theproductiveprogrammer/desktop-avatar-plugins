@@ -111,11 +111,19 @@ async function performTask(task) {
       const thread = document.getElementsByClassName('msg-thread')[0]
       const msgListContent = thread.getElementsByClassName('msg-s-message-list-content')[0]
       const msgList = msgListContent.getElementsByClassName('msg-s-message-list__event')
+      let msgurl
       for(let i = 0;i < msgList.length;i++) {
-        if(urleq(msgList[i].querySelector('a[data-control-name=view_profile]').href, url)) {
-          return {
-            responded: true,
-            msg: msgList[i].getElementsByClassName('msg-s-event-listitem__body')[0].innerText
+        try{
+          msgurl = msgList[i].querySelector('a[data-control-name=view_profile]').href
+        }catch(e){
+          // Ignore when chats doesnt have urls
+        }
+        if(msgurl){
+          if(urleq(msgList[i].querySelector('a[data-control-name=view_profile]').href, url)) {
+            return {
+              responded: true,
+              msg: msgList[i].getElementsByClassName('msg-s-event-listitem__body')[0].innerText
+            }
           }
         }
       }
