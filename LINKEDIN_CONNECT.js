@@ -216,14 +216,10 @@ async function waitForConnectionOption(page) {
   
   try {
     // Case where neither follow/connect are visible
-    await page.waitForSelector(".artdeco-dropdown__trigger.artdeco-dropdown__trigger--placement-bottom.ember-view")
-    await page.evaluate(()=>{
-      document.querySelectorAll(".artdeco-dropdown__trigger.artdeco-dropdown__trigger--placement-bottom.ember-view")[1].click()
-    })
-    await page.waitForSelector(".display-flex.t-normal")
-    await page.evaluate(()=>{
-        document.querySelectorAll(".display-flex.t-normal")[3].click()
-      })
+    await page.waitForSelector(('[aria-label="More actions"]'))
+    await page.click(('[aria-label="More actions"]'))
+    await page.waitForSelector("[data-control-name=connect]")
+    await page.click("[data-control-name=connect]")
     }catch(e) {
       try{
         await page.waitForSelector(
@@ -235,18 +231,17 @@ async function waitForConnectionOption(page) {
         })
         // Follow Button 
         if(textButton == "Follow"){
-          await page.click(".artdeco-dropdown__trigger.artdeco-dropdown__trigger--placement-bottom.ember-view.pvs-profile-actions__action")
-          await page.waitForSelector(".display-flex.t-normal")
-          await page.evaluate(()=>{
-            document.querySelectorAll(".display-flex.t-normal")[2].click()
-          })
+          await page.waitForSelector(('[aria-label="More actions"]'))
+          await page.click(('[aria-label="More actions"]'))
+          await page.waitForSelector("[data-control-name=connect]")
+          await page.click("[data-control-name=connect]")
         }
         // Connect Button
         else if(textButton =="Connect"){
           await page.click(".pvs-profile-actions__action.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view")
         }
-    }catch(err) {
-      await page.click('.pv-s-profile-actions--connect')
+      }catch(err) {
+        await page.click('.pv-s-profile-actions--connect')
     } 
   }
 }
