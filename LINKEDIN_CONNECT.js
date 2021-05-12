@@ -136,6 +136,7 @@ async function performTask(task) {
   let currentUrl = page.url()
   if(currentUrl.includes('unavailable')) throw new Error(`${task.linkedInURL}: this profile is not available`)
   await waitForConnectionOption(page)
+  await waitForConnectedQuestion(page)
   try {
     await page.waitForSelector(
       '[aria-label="Send now"]',
@@ -211,44 +212,49 @@ async function waitForNoteOption(page,note){
   }
 }
 
-//Waiting for Connection Button
 async function waitForConnectionOption(page) {
-  try{
-    await page.waitForSelector(
-      '.pvs-profile-actions__action.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view',
-      { visible: true })
-    // For the case where we have Follow option in profiles instead of Connect
-    let textButton = await page.evaluate(()=>{
-      let textele = document.querySelector(".pvs-profile-actions__action.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view")
-      return textele.innerText
-    })
-    if(textButton == "Follow"){
-      await page.click(".artdeco-dropdown__trigger.artdeco-dropdown__trigger--placement-bottom.ember-view.pvs-profile-actions__action")
-      await page.waitForSelector(".display-flex.t-normal")
-      await page.evaluate(()=>{
-        document.querySelectorAll(".display-flex.t-normal")[2].click()
-      })
-      }
-      else{
-        await page.click(".pvs-profile-actions__action.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view")
-      }
-  } catch(e) {
-    try {
-      // For the case where neither follow/connect are visible
-      await page.waitForSelector(".artdeco-dropdown__trigger.artdeco-dropdown__trigger--placement-bottom.ember-view")
-      await page.evaluate(()=>{
-        document.querySelectorAll(".artdeco-dropdown__trigger.artdeco-dropdown__trigger--placement-bottom.ember-view")[1].click()
-      })
-      await page.waitForSelector(".display-flex.t-normal")
-      await page.evaluate(()=>{
-          document.querySelectorAll(".display-flex.t-normal")[3].click()
+  
+  try {
+    // Case where neither follow/connect are visible
+    await page.waitForSelector(('[aria-label="More actions"]'))
+    await page.click(('[aria-label="More actions"]'))
+    await page.waitForSelector("[data-control-name=connect]")
+    await page.click("[data-control-name=connect]")
+    }catch(e) {
+      try{
+        await page.waitForSelector(
+          '.pvs-profile-actions__action.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view',
+          { visible: true })
+        let textButton = await page.evaluate(()=>{
+          let textele = document.querySelector(".pvs-profile-actions__action.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view")
+          return textele.innerText
         })
-      await page.waitForSelector('button[aria-label="No"]')
-      await page.click('button[aria-label="No"]')
-      await page.waitForSelector('button[aria-label="Connect"]')
-      await page.click('button[aria-label="Connect"]')
+        // Follow Button 
+        if(textButton == "Follow"){
+          await page.waitForSelector(('[aria-label="More actions"]'))
+          await page.click(('[aria-label="More actions"]'))
+          await page.waitForSelector("[data-control-name=connect]")
+          await page.click("[data-control-name=connect]")
+        }
+        // Connect Button
+        else if(textButton =="Connect"){
+          await page.click(".pvs-profile-actions__action.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view")
+        }
       }catch(err) {
         await page.click('.pv-s-profile-actions--connect')
-    }
+    } 
   }
+}
+
+// Handling whether connected before question
+async function waitForConnectedQuestion(page){
+  try
+  {
+    await page.waitForSelector('button[aria-label="No"]')
+    await page.click('button[aria-label="No"]')
+    await page.waitForSelector('button[aria-label="Connect"]')
+    await page.click('button[aria-label="Connect"]')
+  } catch(error){
+    // ignore If the question didnt come 
+  } 
 }
