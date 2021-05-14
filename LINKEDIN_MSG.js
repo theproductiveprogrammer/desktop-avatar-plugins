@@ -52,7 +52,7 @@ async function performTask(task) {
     }
   }
   const name = await page.evaluate(()=>{
-    return document.querySelector('li.inline.t-24.t-black.t-normal.break-words').innerText 
+    return document.querySelector('.text-heading-xlarge').innerText 
   })
   if(!name) {
     status.servererr("Failed to find user name!")
