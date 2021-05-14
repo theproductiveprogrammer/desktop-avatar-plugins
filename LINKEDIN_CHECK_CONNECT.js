@@ -62,7 +62,7 @@ async function performTask(task) {
   await page.waitForSelector('.dist-value')
 
   const connected = await page.evaluate(async () => {
-    let d = document.getElementsByClassName(".dist-value")
+    let d = document.querySelector(".dist-value")
     let txt = d.innerText
     return txt.indexOf("1st") != -1
   })
