@@ -59,12 +59,12 @@ function pickOne(a) {
 
 async function performTask(task) {
   await page.goto(task.linkedInURL)
-  await page.waitForSelector('.distance-badge.separator')
+  await page.waitForSelector('.dist-value')
 
   const connected = await page.evaluate(async () => {
-    let d = document.getElementsByClassName("distance-badge separator")[0]
+    let d = document.getElementsByClassName(".dist-value")
     let txt = d.innerText
-    return txt.indexOf("1st degree connection") != -1
+    return txt.indexOf("1st") != -1
   })
 
   if(connected) {
