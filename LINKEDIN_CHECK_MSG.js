@@ -71,7 +71,7 @@ async function performTask(task) {
     }
   }
   let name = await page.evaluate(()=>{
-    const e = document.querySelector('li.inline.t-24.t-black.t-normal.break-words')
+    const e = document.querySelector('.text-heading-xlarge')
     return e ? e.innerText : null
   })
 
