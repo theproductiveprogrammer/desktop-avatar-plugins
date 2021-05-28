@@ -241,18 +241,24 @@ async function waitForConnectionOption(page) {
           await page.click(".pvs-profile-actions__action.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view")
         }
       }catch(err) {
-        // Case with Three Dot Button Instead of More Button
-        await page.waitForSelector(".ml2.mr2.pv-s-profile-actions__overflow-toggle")
-        await page.click('.ml2.mr2.pv-s-profile-actions__overflow-toggle')
-        await page.waitForSelector(".display-flex.t-normal.pv-s-profile-actions__label")
-        await page.evaluate(()=>{
-            document.querySelectorAll(".display-flex.t-normal.pv-s-profile-actions__label")[3].click()
-        })
-        await page.waitForSelector('[aria-label="Connect"]')
-        await page.click('[aria-label="Connect"]')
-    } 
+        try{
+          // Case with another type of Connect button
+          await page.waitForSelector(".pv-s-profile-actions.pv-s-profile-actions--connect")
+          await page.click(".pv-s-profile-actions.pv-s-profile-actions--connect")
+        }catch(error){
+            // Case with Three Dot Button Instead of More Button
+          await page.waitForSelector(".ml2.mr2.pv-s-profile-actions__overflow-toggle")
+          await page.click('.ml2.mr2.pv-s-profile-actions__overflow-toggle')
+          await page.waitForSelector(".display-flex.t-normal.pv-s-profile-actions__label")
+          await page.evaluate(()=>{
+              document.querySelectorAll(".display-flex.t-normal.pv-s-profile-actions__label")[3].click()
+          })
+          await page.waitForSelector('[aria-label="Connect"]')
+          await page.click('[aria-label="Connect"]')
+        }
+      } 
+    }
   }
-}
 
 // Handling whether connected before question
 async function waitForConnectedQuestion(page){

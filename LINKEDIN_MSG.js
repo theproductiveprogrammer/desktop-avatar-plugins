@@ -51,9 +51,7 @@ async function performTask(task) {
       await page.waitFor(2000)
     }
   }
-  const name = await page.evaluate(()=>{
-    return document.querySelector('.text-heading-xlarge').innerText 
-  })
+  const name = await getnametext(page)
   if(!name) {
     status.servererr("Failed to find user name!")
     return
@@ -122,4 +120,22 @@ async function performTask(task) {
   await page.click('button.msg-form__send-button')
   await page.waitFor(2000)
   status.done()
+}
+
+// Get the name element 
+async function getnametext(page){
+  let nametext
+  try
+  {
+    await page.waitForSelector(".inline.t-24.t-black.t-normal.break-words")
+    nametext = await page.evaluate(()=>{
+      return document.querySelector('.inline.t-24.t-black.t-normal.break-words').innerText 
+    })
+  }catch(e){
+    await page.waitForSelector(".text-heading-xlarge")
+    nametext = await page.evaluate(()=>{
+      return document.querySelector('.text-heading-xlarge').innerText 
+    })
+  }
+ return nametext
 }
