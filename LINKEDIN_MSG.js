@@ -119,7 +119,17 @@ async function performTask(task) {
   await page.type(msgbox_sel, task.message)
   await page.click('button.msg-form__send-button')
   await page.waitFor(2000)
-  status.done()
+  await page.goto('https://www.linkedin.com/messaging/')
+  let firstconvtext = await page.evaluate(()=>{
+    let firstconv = document.querySelectorAll(".msg-conversation-card__rows")[0]
+    let convtext = firstconv.innerText
+    return convtext
+  })
+  if(firstconvtext.includes(name)&&firstconvtext.includes(task.message)){
+    status.done()
+  }else{
+    status.pageerr("Linkedin updated. Please notify developer.")
+  }
 }
 
 // Get the name element 

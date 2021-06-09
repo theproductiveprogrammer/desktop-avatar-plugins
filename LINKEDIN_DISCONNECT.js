@@ -61,7 +61,25 @@ async function performTask(task) {
         if(clicked) {
           await page.click('.artdeco-modal__confirm-dialog-btn.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view')
           await page.waitFor("p.artdeco-toast-item__message")
-          status.notify('event/connection-withdrawn')
+          await page.goto("https://www.linkedin.com/mynetwork/invitation-manager/sent/")
+          await page.waitForSelector('.mn-invitation-list')
+          let urllist = await page.evaluate(()=>{
+            let inviteurllist = []
+            let invites = document.getElementsByClassName("mn-invitation-list")[0]
+            invites = invites.getElementsByTagName('li')
+            for(let i = 0;i < invites.length;i++) {
+              let invite = invites[i]
+              let urlele = invite.getElementsByTagName('a')
+              let inviteurl = urlele[1].href
+              inviteurllist.push(inviteurl)
+            }
+            return inviteurllist
+          })
+          if(!urllist.includes(task.linkedInURL)){
+            status.notify('event/connection-withdrawn')
+          }else{
+            status.pageerr("Linkedin updated. Please notify developer.")
+          }
         }
         else {
           status.done()
