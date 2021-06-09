@@ -156,7 +156,6 @@ async function performTask(task) {
       'Send now',
       'Send invitation',
     ], page)
-    status.done()
   } else {
     await waitforemailoption(page,task.email)
     await clickButton([
@@ -164,9 +163,24 @@ async function performTask(task) {
       'Send now',
       'Send invitation',
     ], page)
-    status.done()
   }
-  
+  await page.goto("https://www.linkedin.com/mynetwork/invitation-manager/sent/")
+  await page.waitForSelector('.mn-invitation-list')
+  let req_sent = await page.evaluate((lead_url)=>{
+      const invites = document.getElementsByClassName("mn-invitation-list")[0]
+      const urls = invites.getElementsByTagName('a')
+      let firsturl = urls[0].href
+      if(firsturl == lead_url){
+        return true
+      }else{
+        return false
+      }
+    },task.linkedInURL)
+    if(req_sent) {
+      status.done()
+    }else{
+      status.pageerr("Linkedin updated. Please notify developer.")
+    }
 }
 
 
