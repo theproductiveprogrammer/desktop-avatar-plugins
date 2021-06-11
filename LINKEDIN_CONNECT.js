@@ -166,19 +166,15 @@ async function performTask(task) {
   }
   await page.goto("https://www.linkedin.com/mynetwork/invitation-manager/sent/")
   await page.waitForSelector('.mn-invitation-list')
-  let req_sent = await page.evaluate((lead_url)=>{
-      const invites = document.getElementsByClassName("mn-invitation-list")[0]
-      const urls = invites.getElementsByTagName('a')
-      let firsturl = urls[0].href
-      if(firsturl == lead_url){
-        return true
-      }else{
-        return false
-      }
-    },task.linkedInURL)
-    if(req_sent) {
-      status.done()
-    }else{
+  let first_url = await page.evaluate(()=>{
+    const invites = document.getElementsByClassName("mn-invitation-list")[0]
+    const urls = invites.getElementsByTagName('a')
+    let firsturl = urls[0].href
+    return firsturl
+  })
+  if(util.compareTwoStrings(first_url,task.linkedInURL)>0.9){
+    status.done()
+  }else{
       status.pageerr("Linkedin updated. Please notify developer.")
     }
 }
@@ -234,6 +230,8 @@ async function waitForConnectionOption(page) {
     await page.click(('[aria-label="More actions"]'))
     await page.waitForSelector("[data-control-name=connect]")
     await page.click("[data-control-name=connect]")
+    await page.waitForSelector('[aria-label="Connect"]')
+    await page.click('[aria-label="Connect"]')
     }catch(e) {
       try{
         await page.waitForSelector(
