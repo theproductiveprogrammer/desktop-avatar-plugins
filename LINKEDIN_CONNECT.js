@@ -135,18 +135,8 @@ async function performTask(task) {
   await page.goto(task.linkedInURL)
   let currentUrl = page.url()
   if(currentUrl.includes('unavailable')) throw new Error(`${task.linkedInURL}: this profile is not available`)
-  await waitForConnectionOption(page)
+  await waitForConnectionOption(page,status)
   await waitForConnectedQuestion(page)
-  try {
-    await page.waitForSelector(
-      '[aria-label="Send now"]',
-      { visible: true })
-  } catch(e) {
-    /* try another interface */
-    await page.waitForSelector(
-      '[aria-label="Send invitation"]',
-      { visible: true })
-  }
 
   if(task.message) {
     await waitForNoteOption(page,task.message)
@@ -223,53 +213,74 @@ async function waitForNoteOption(page,note){
 }
 
 async function waitForConnectionOption(page) {
-  
-  try {
-    // Case where neither follow/connect are visible
-    await page.waitForSelector(('[aria-label="More actions"]'))
-    await page.click(('[aria-label="More actions"]'))
+
+  const selectors = [
+    '.pvs-profile-actions__action.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view',
+    '[data-control-name="connect"]',
+    '.ml2.mr2.pv-s-profile-actions__overflow-toggle',
+  ]
+  const jsHandle = await page.waitForFunction((selectors) => {
+      for (const selector of selectors) {
+        if (document.querySelector(selector) !== null) {
+          return selector;
+        }
+      }
+      return false;
+    }, {}, selectors);
+   
+  const selector = await jsHandle.jsonValue();
+  console.log(selector)
+  if (selector == selectors[0]){
+    let textButton = await page.evaluate(()=>{
+      let textele = document.querySelector(".pvs-profile-actions__action.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view")
+      return textele.innerText
+    })
+    // Follow Button
+    if(textButton == "Follow"){
+      await page.waitForSelector(('[aria-label="More actions"]'))
+      await page.click(('[aria-label="More actions"]'))
+      await page.waitForSelector('[data-control-name="connect"]')
+      await page.click('[data-control-name="connect"]')
+      await page.waitForSelector('[aria-label="Connect"]')
+      await page.click('[aria-label="Connect"]')
+    }
+    // Connect Button
+    else if(textButton =="Connect"){
+      await page.click(".pvs-profile-actions__action.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view")
+      }
+    }
+  else if (selector == selectors[1]) {
+    let error = null;
+    await page.hover('yourSelector').catch(e => error = e);
+    if (!error) {
+      // Connect Button Case
+      await page.waitForSelector('[data-control-name="connect"]')
+      await page.click('[data-control-name="connect"]')
+   }else{
+    // Message And More Button Case
+    await page.click(".artdeco-dropdown__trigger.artdeco-dropdown__trigger--placement-bottom.ember-view.pvs-profile-actions__action")
     await page.waitForSelector("[data-control-name=connect]")
     await page.click("[data-control-name=connect]")
     await page.waitForSelector('[aria-label="Connect"]')
     await page.click('[aria-label="Connect"]')
-    }catch(e) {
-      try{
-        await page.waitForSelector(
-          '.pvs-profile-actions__action.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view',
-          { visible: true })
-        let textButton = await page.evaluate(()=>{
-          let textele = document.querySelector(".pvs-profile-actions__action.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view")
-          return textele.innerText
-        })
-        // Follow Button 
-        if(textButton == "Follow"){
-          await page.waitForSelector(('[aria-label="More actions"]'))
-          await page.click(('[aria-label="More actions"]'))
-          await page.waitForSelector("[data-control-name=connect]")
-          await page.click("[data-control-name=connect]")
-        }
-        // Connect Button
-        else if(textButton =="Connect"){
-          await page.click(".pvs-profile-actions__action.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view")
-        }
-      }catch(err) {
-        try{
-          // Case with another type of Connect button
-          await page.waitForSelector(".pv-s-profile-actions.pv-s-profile-actions--connect")
-          await page.click(".pv-s-profile-actions.pv-s-profile-actions--connect")
-        }catch(error){
-            // Case with Three Dot Button Instead of More Button
-          await page.waitForSelector(".ml2.mr2.pv-s-profile-actions__overflow-toggle")
-          await page.click('.ml2.mr2.pv-s-profile-actions__overflow-toggle')
-          await page.waitForSelector(".display-flex.t-normal.pv-s-profile-actions__label")
-          await page.evaluate(()=>{
-              document.querySelectorAll(".display-flex.t-normal.pv-s-profile-actions__label")[3].click()
-          })
-          await page.waitForSelector('[aria-label="Connect"]')
-          await page.click('[aria-label="Connect"]')
-        }
-      } 
+   }
+    
     }
+  else if(selector == selectors[2]){
+    // Three Dot Button Case
+    await page.waitForSelector(".ml2.mr2.pv-s-profile-actions__overflow-toggle")
+    await page.click('.ml2.mr2.pv-s-profile-actions__overflow-toggle')
+    await page.waitForSelector(".display-flex.t-normal.pv-s-profile-actions__label")
+    await page.evaluate(()=>{
+        document.querySelectorAll(".display-flex.t-normal.pv-s-profile-actions__label")[3].click()
+    })
+    await page.waitForSelector('[aria-label="Connect"]')
+    await page.click('[aria-label="Connect"]')   
+    }
+    else{
+      status.pageerr = "Couldnt find Connect Buttton.Please Notify Developer"
+    }    
+  
   }
 
 // Handling whether connected before question
