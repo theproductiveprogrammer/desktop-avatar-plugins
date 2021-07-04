@@ -90,35 +90,21 @@ async function performTask(task) {
     }
   }
 
-  await page.goto(task.linkedInURL)
-  try {
-    await page.waitFor('input[role=combobox]')
-  } catch(e) {
-    try {
-      await page.waitFor('[data-resource="feed/badge"]')
-    } catch(e) {
-      await page.waitFor(2000)
-    }
-  }
-  await page.evaluate(async () => {
-    const as = document.getElementsByTagName('a')
-    let found
-    for(let i = 0;i < as.length;i++) {
-      let curr = as[i]
-      if(curr.href
-        && curr.href.match(/messaging\/thread\/.*compose_message_button/)) {
-        found = curr
-        break
-      }
-    }
-    if(!found) throw('Failed to find message button')
-    found.click()
-  })
-  const msgbox_sel = 'div.msg-form__contenteditable[contenteditable=true]'
-  await page.waitFor(msgbox_sel)
-  await page.type(msgbox_sel, task.message)
+  await page.goto('https://www.linkedin.com/messaging/')
+  await page.waitForSelector('#search-conversations')
+  await page.type('#search-conversations',name)
+  await page.keyboard.press(String.fromCharCode(13))
+  await page.waitFor(5000)
+  await page.waitForSelector('.msg-conversation-card__content--selectable')
+  await page.click('.msg-conversation-card__content--selectable')
+  await page.waitForSelector('.msg-form__contenteditable')
+  await page.type('.msg-form__contenteditable',task.message)
+  await page.waitFor(5000)
+  await page.waitForSelector('button.msg-form__send-button')
   await page.click('button.msg-form__send-button')
-  await page.waitFor(2000)
+  await page.waitFor(3000)
+  
+  // Verification Step
   await page.goto('https://www.linkedin.com/messaging/')
   let firstconvtext = await page.evaluate(()=>{
     let firstconv = document.querySelectorAll(".msg-conversation-card__rows")[0]
